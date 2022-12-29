@@ -1,15 +1,19 @@
-import { useRef, useState } from 'react';
-import GameLayout from '../Layout/GameLayout';
+import { RefObject, useRef, useState } from 'react';
+import GameLayout from '../layout/GameLayout';
 import { FaCrosshairs } from 'react-icons/fa';
 import Result from '../components/Result';
 
 const AimTrainer = () => {
 
-  const TOTAL_TARGETS = 20;
-  
   // Target
-  const targetSize = 100; // pixels
-  const areaRef = useRef(null);
+  const TOTAL_TARGETS = 20;
+  const TARGET_SIZE = 100; // pixels
+
+  // Reference to the area
+  const areaRef: RefObject<HTMLDivElement> = useRef(null);
+
+  // Could be improved with useReduce, but use useState for now
+  // Position of the target
   const [x, setX] = useState<number | string>('50%');
   const [y, setY] = useState<number | string>('50%');
 
@@ -20,7 +24,7 @@ const AimTrainer = () => {
   // Array of elapsed time
   const [time, setTime] = useState<number[]>([]);
   
-  const Target = () => <FaCrosshairs size={targetSize} onClick={handleClick}
+  const Target = () => <FaCrosshairs size={TARGET_SIZE} onClick={handleClick}
   className='cursor-pointer absolute text-red-500' style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }} />
   
   const getCurrentTime = () => {
@@ -39,7 +43,9 @@ const AimTrainer = () => {
   const handleClick = () => {
     const area = areaRef.current;
 
-    // area could possibly be null, but ignore the typescript error since it wouldn't be null after anyway
+    // Makes sure that area has a value
+    if(!area) return;
+  
     const width = area.offsetWidth;
     const height = area.offsetHeight;
     const newX = Math.random() * (width - 64);
@@ -64,13 +70,18 @@ const AimTrainer = () => {
     setY('50%');
   }
 
-  let remainingTargets = TOTAL_TARGETS - time.length
+  let remainingTargets = TOTAL_TARGETS - time.length;
 
   return (
     <GameLayout refProp={areaRef}>
+      <h2 className='absolute top-0'>Remaining: {remainingTargets}</h2>
       <Target />
-      {remainingTargets === 0 ? <Result average={getAverageTime()} restart={restart} /> : null}
-      Remaining: {remainingTargets}
+      {remainingTargets === 0 ?
+        <Result restart={restart}>
+          <h2>Average time per target:</h2>
+          {getAverageTime()} ms
+        </Result>
+        : null}
     </GameLayout>
   )
 }

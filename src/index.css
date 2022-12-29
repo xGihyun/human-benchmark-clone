@@ -7,5 +7,6 @@
 }
 
 .chimp-square{
-  @apply bg-white max-w-[100px] aspect-square rounded-2xl text-black flex justify-center items-center cursor-pointer;
+  @apply max-w-[100px] aspect-square rounded-2xl text-white flex justify-center 
+    items-center cursor-pointer hover:border-white border-neutral-400 border-4;
 }

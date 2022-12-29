@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import GameLayout from '../Layout/GameLayout';
+import Result from '../components/Result';
+import GameLayout from '../layout/GameLayout';
 
 type Props = {
   num?: number,
@@ -11,6 +12,31 @@ type ListProps = {
 }
 
 const ChimpTest = () => {
+
+  // Could be improved with useReduce, but use useState for now
+  const [hidden, setHidden] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [round, setRound] = useState(1);
+
+  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+    let index = 0;
+    const currentItemValue = items[index].num;
+    const clickedItemValue = parseInt((e.currentTarget.getAttribute("data-num")) as string);
+
+    setHidden(true);
+
+    if(currentItemValue !== clickedItemValue){
+      setGameOver(true);
+    }
+    setItems(items.slice(1))
+    index++;
+    
+    // If array is empty === you didn't fail, then move to next round
+    if(items.length === 1){
+      setRound(round + 1)
+      setHidden(false);
+    }
+  }
 
   // Generate random spot  
   const randomSpot = () => {  
@@ -37,21 +63,15 @@ const ChimpTest = () => {
     return spot;
   }
 
-  // Spots of the initial squares
-  const initialSpots = () => {
-    const row = randomSpot().row;
-    const col = randomSpot().col;
-    const spot = { row, col };
-    const spotProp: Props = { spot };
-    
-    return spotProp;
-  };
-
+  // Array of the squares
   const [items, setItems] = useState<Props[]>([]);
 
+  // Initialize squares
+  // If gameOver state changes, run this function (reinitializes squares after restart)
+  // If round # changes, run this function (increments the number of squares after each round)
   useEffect(() => {
     const newInitialItems: Props[] = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < round + 3; i++) {
       const row = randomSpot().row;
       const col = randomSpot().col;
       const spot = { row, col };
@@ -64,36 +84,37 @@ const ChimpTest = () => {
       newInitialItems.push(newInitialItem);
     }
     setItems([...items, ...newInitialItems]);
-  }, []);
+  }, [gameOver || round]);
+
+  // Add squares
+  // const handleAddItem = useCallback(() => {
+  //   const row = randomSpot().row;
+  //   const col = randomSpot().col;
+  //   const spot = { row, col };
+  //   const index = items.length + 1;
+    
+  //   const newItem = {
+  //     num: index,
+  //     spot: checkOccupiedSpot([...items], spot),
+  //   };
+
+  //   setItems([...items, newItem]);
+  // }, [items]);
 
   // The square element you click on
   const Square: React.FC<Props> = React.memo((props) => {
     return (
-      <div className='chimp-square'
-        onClick={() => { handleAddItem() }} 
+      <div className={hidden ? 'bg-white chimp-square' : 'bg-black chimp-square'}
+        onClick={handleClick}
         style={{ gridRow: props.spot.row, gridColumn: props.spot.col }}
+        data-num={props.num}
       >
-        {props.num}
+        {hidden ? null : props.num}
       </div>
     )
   });
 
-  // Add squares
-  const handleAddItem = useCallback(() => {
-    const row = randomSpot().row;
-    const col = randomSpot().col;
-    const spot = { row, col };
-    const index = items.length + 1;
-    
-    const newItem = {
-      num: index,
-      spot: checkOccupiedSpot([...items], spot),
-    };
-
-    setItems([...items, newItem]);
-  }, [items]);
-
-  // List of squares
+  // Memoized list of squares
   const MyList: React.FC<ListProps> = ({ items }) => {
     const update = useRef(true);
 
@@ -120,11 +141,24 @@ const ChimpTest = () => {
     )
   }
 
+  // Reset everything
+  const restart = () => {
+    setHidden(false);
+    setGameOver(false);
+    setRound(1);
+    setItems([]);
+  }
+
   return (
     <GameLayout>
-      <div className='grid gap-2 grid-cols-10-90px grid-rows-8-90px'>
-        <MyList items={items} />
-      </div>
+      {gameOver ?
+        <Result restart={restart}>
+          <h2>Numbers: {round + 3}</h2>
+        </Result>
+        :
+        <div className='grid gap-2 grid-cols-10-90px grid-rows-8-90px'>
+          <MyList items={items} />
+        </div>}
     </GameLayout>
   )
 }
